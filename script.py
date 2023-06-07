@@ -2,15 +2,8 @@ import json
 import csv
 import datetime
 import operator
-
-
-conversationsFile = open('dataExport/conversations.json')
-conversationsJSON = json.load(conversationsFile)
-conversationsJSON = sorted(conversationsJSON, key=operator.itemgetter('create_time'))
-
-messageFeedbackFile = open('dataExport/message_feedback.json')
-messageFeedbackJSON = json.load(messageFeedbackFile)
-messageFeedbackJSON = sorted(messageFeedbackJSON, key=operator.itemgetter('create_time'))
+import sys
+import os
 
 def getAuthorString(chat):
     authorInfo = chat['message']['author']['role']
@@ -94,7 +87,28 @@ def get_conversation_feedback(conversation_id):
 def format_output_conversation_title(conversation_title):
     return conversation_title.replace("/", "-")
 
-def main():
+def deserialize(folder_path):
+    global conversationsJSON
+    global messageFeedbackJSON
+
+    conversationsFile = open(f'{folder_path}/conversations.json')
+    conversationsJSON = json.load(conversationsFile)
+    conversationsJSON = sorted(conversationsJSON, key=operator.itemgetter('create_time'))
+
+    messageFeedbackFile = open(f'{folder_path}/message_feedback.json')
+    messageFeedbackJSON = json.load(messageFeedbackFile)
+    messageFeedbackJSON = sorted(messageFeedbackJSON, key=operator.itemgetter('create_time'))
+
+def main(folder_path):
+    # Your main program logic here
+    if not os.path.isdir(folder_path):
+        print("Invalid folder path!")
+        sys.exit(1)
+
+    folder_name = os.path.basename(folder_path)
+
+    deserialize(folder_path)
+
     for conversation in conversationsJSON:
         conversationTitle = conversation['title']
         conversationCreateTime = get_UTC_timestamp(conversation['create_time'])
@@ -121,4 +135,9 @@ def main():
         print()
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) != 2:
+        print("Usage: python script_name.py folder_path")
+        sys.exit(1)
+
+    folder_path = sys.argv[1]
+    main(folder_path)
