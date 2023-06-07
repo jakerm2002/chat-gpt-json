@@ -12,11 +12,13 @@ messageFeedbackFile = open('dataExport/message_feedback.json')
 messageFeedbackJSON = json.load(messageFeedbackFile)
 messageFeedbackJSON = sorted(messageFeedbackJSON, key=operator.itemgetter('create_time'))
 
+def getAuthorString(chat):
+    authorInfo = chat['message']['author']['role']
+    return "user" if authorInfo == "user" else "GPT" if authorInfo == "assistant" else "SYSTEM_ROOT"
 
 def printFormat(mapping, node_id, level):
     num_spaces = level * 2
-    authorInfo = mapping[node_id]['message']['author']['role']
-    authorString = "USER" if authorInfo == "user" else "GPT" if authorInfo == "assistant" else "SYSTEM_ROOT"
+    authorString = getAuthorString(mapping[node_id])
     # print((" " * num_spaces) + " - " + messageAuthor + node_id)
     print(f"{' ' * num_spaces}- {authorString} {node_id}")
 
@@ -54,21 +56,20 @@ def get_system_node_id(conversation):
 def write_message_to_csv(writer, chat, feedbackObject, index):
     # message_contents = [part for part in chat['message']['content']['parts']] if len(chat['message']['content']['parts']) > 1 else chat['message']['content']['parts'][0]
     create_time = get_UTC_timestamp(chat['message']['create_time'])
+    author = getAuthorString(chat)
     feedback = feedbackObject.get(chat['id'])
     rating = feedback.get('rating', "") if feedback else ""
-    # print('CONTENT DATA')
     contentString = feedback.get('content', "") if feedback else None
     contentObject = json.loads(contentString) if contentString else None
-    # print(contentObject)
     tags = contentObject.get('tags', "") if contentObject else ""
     is_original_message = False if index else True
 
-    writer.writerow([chat['id'], create_time, rating, tags, is_original_message])
+    writer.writerow([chat['id'], author, create_time, rating, tags, is_original_message])
 
 def get_UTC_timestamp(epoch_time):
     return datetime.datetime.utcfromtimestamp(epoch_time).strftime('%Y-%m-%d %H:%M:%S')
 
-csv_header_columns = ['message_id', 'create_time', 'rating', 'tags', 'is_original_message']
+csv_header_columns = ['message_id', 'author', 'create_time', 'rating', 'tags', 'is_original_message']
 
 # returns a dictionary containing the feedback for this conversation
 # key: a message id
