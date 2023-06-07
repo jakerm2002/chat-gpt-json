@@ -11,10 +11,13 @@ def getAuthorString(chat):
     return "user" if authorInfo == "user" else "GPT" if authorInfo == "assistant" else "SYSTEM"
 
 
-def printFormat(mapping, node_id, level):
+def printFormat(mapping, node_id, level, target=None):
     num_spaces = level * 2
     authorString = getAuthorString(mapping[node_id])
-    print(f"{' ' * num_spaces}- {authorString} {node_id}")
+    endChar = ""
+    if target and node_id == target:
+        endChar = "     *"
+    print(f"{' ' * num_spaces}- {authorString} {node_id}{endChar}")
 
 
 # root_id: id field of the root node
@@ -23,6 +26,12 @@ def depth_first(mapping, node_id, index, level, write, writer, feedback):
     write(writer, mapping[node_id], feedback, level, index)
     for index, child in enumerate(mapping[node_id]['children']):
         depth_first(mapping, child, index, level + 1, write, writer, feedback)
+
+
+def depth_first_print_only(mapping, node_id, index, level, target=None):
+    printFormat(mapping, node_id, level, target=target)
+    for index, child in enumerate(mapping[node_id]['children']):
+        depth_first_print_only(mapping, child, index, level + 1, target=target)
 
 
 # the structure of the tree goes
@@ -83,6 +92,12 @@ def get_conversation_feedback(conversation_id):
             feedbackDict[feedback['id']] = feedback
     return feedbackDict
 
+def get_conversation(conversation_id):
+    for conversation in conversationsJSON:
+        if conversation['id'] == conversation_id:
+            return conversation
+    return None
+
 
 # removes backslashes and dots to avoid python open() command when writing
 def format_output_conversation_title(conversation_title):
@@ -130,11 +145,43 @@ def create_description_box(text):
 def prompt_user_input():
     print(create_ascii_box('CONSOLE'))
     print(create_description_box('Use the console to obtain\ninformation about an object via its id.'))
+    print("––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––")
+    print()
 
     while True:
         user_input = input("Enter a (conversation/message) id: ")
+        print()
         if user_input.lower() == 'exit' or user_input.lower() == 'quit':
             break
+        print_reference(user_input)
+
+def get_reference(reference_id):
+    return references.get(reference_id, None)
+
+
+def print_reference(reference_id):
+    ref = get_reference(reference_id)
+    if not ref:
+        print('id is not valid!')
+    print(create_ascii_box(reference_id))
+    print(create_ascii_box(ref[1]))
+    conv = get_conversation(ref[0])
+    system_node_id = get_system_node_id(conv)
+    if ref[1] != 'conversation':
+        print(create_ascii_box(f'author: {getAuthorString(conv["mapping"][reference_id])}'))
+        print(create_ascii_box(f'In conversation: {ref[0]}'))
+        parent = conv["mapping"][reference_id]["parent"]
+        print(create_ascii_box(f'Parent: {parent}'))
+        children = conv["mapping"][reference_id]["children"] if conv["mapping"][reference_id]["children"] else "None"
+        print(create_ascii_box(f'Children:'))
+        if type(children) == list:
+            for child in children:
+                print(f'    {child}')
+        else:
+            print('    None')
+    print(create_ascii_box('Tree: '))
+    print(depth_first_print_only(conv["mapping"], system_node_id, 0, 0, target=reference_id))
+
 
 def main(folder_path):
     # Your main program logic here
@@ -145,11 +192,20 @@ def main(folder_path):
     folder_name = os.path.basename(folder_path)
 
     deserialize(folder_path)
+    
+    # global dictionary
+    # key: a conversation/message/feedback id
+    # value: the conversation where the id is contained
+    global references
+    references = {}
 
     for conversation in conversationsJSON:
         conversationTitle = conversation['title']
         conversationCreateTime = get_UTC_timestamp(conversation['create_time'])
         conversationID = conversation['id']
+
+        references[conversation['id']] = (conversation['id'], 'conversation')
+        references.update({chat_id: (conversation['id'], 'chat') for chat_id in conversation['mapping']})
 
         feedback = get_conversation_feedback(conversationID)
 
@@ -166,6 +222,7 @@ def main(folder_path):
 
         print()
 
+    print(json.dumps(references, indent=4))
     prompt_user_input()
 
 
