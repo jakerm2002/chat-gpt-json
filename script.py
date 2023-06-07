@@ -62,14 +62,15 @@ def write_message_to_csv(writer, chat, feedbackObject, index):
     contentString = feedback.get('content', "") if feedback else None
     contentObject = json.loads(contentString) if contentString else None
     tags = contentObject.get('tags', "") if contentObject else ""
+    text_feedback = contentObject.get('text', "") if contentObject else ""
     is_original_message = False if index else True
 
-    writer.writerow([chat['id'], author, create_time, rating, tags, is_original_message])
+    writer.writerow([chat['id'], author, create_time, rating, tags, text_feedback, is_original_message])
 
 def get_UTC_timestamp(epoch_time):
     return datetime.datetime.utcfromtimestamp(epoch_time).strftime('%Y-%m-%d %H:%M:%S')
 
-csv_header_columns = ['message_id', 'author', 'create_time', 'rating', 'tags', 'is_original_message']
+csv_header_columns = ['message_id', 'author', 'create_time', 'rating', 'tags', 'text_feedback', 'is_original_message']
 
 # returns a dictionary containing the feedback for this conversation
 # key: a message id
@@ -80,6 +81,10 @@ def get_conversation_feedback(conversation_id):
         if feedback['conversation_id'] == conversation_id:
             feedbackDict[feedback['id']] = feedback
     return feedbackDict
+
+# removes backslashes and dots to avoid python open() command when writing
+def format_output_conversation_title(conversation_title):
+    return conversation_title.replace("/", "-")
 
 def main():
     for conversation in conversationsJSON:
@@ -94,7 +99,7 @@ def main():
         system_node_id = get_system_node_id(conversation)
 
         # open the file in the write mode
-        with open(f'{conversationCreateTime}_{conversationID}_{conversationTitle}.csv', 'w') as f:
+        with open(f'{conversationCreateTime}_{conversationID}_{format_output_conversation_title(conversationTitle)}.csv', 'w') as f:
             # create the csv writer
             writer = csv.writer(f)
 
