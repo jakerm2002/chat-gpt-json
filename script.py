@@ -121,7 +121,7 @@ def create_description_box(text):
     box_top = f'╭{horizontal_line}╮'
     box_bottom = f'╰{horizontal_line}╯'
 
-    padded_lines = [f'│ {line.ljust(max_length)} │' for line in lines]
+    padded_lines = [f'│ {line.ljust(max_length).rjust(box_width - 2)} │' for line in lines]
     box_middle = '\n'.join(padded_lines)
 
     ascii_box = '\n'.join([box_top, box_middle, box_bottom])
@@ -130,7 +130,11 @@ def create_description_box(text):
 def prompt_user_input():
     print(create_ascii_box('CONSOLE'))
     print(create_description_box('Use the console to obtain\ninformation about an object via its id.'))
-    user_input = input("Enter a conversation id:")
+
+    while True:
+        user_input = input("Enter a (conversation/message) id: ")
+        if user_input.lower() == 'exit' or user_input.lower() == 'quit':
+            break
 
 def main(folder_path):
     # Your main program logic here
@@ -161,7 +165,8 @@ def main(folder_path):
             depth_first(conversation['mapping'], system_node_id, 0, 0, write_message_to_csv, writer, feedback)
 
         print()
-        prompt_user_input()
+
+    prompt_user_input()
 
 
 if __name__ == "__main__":
