@@ -59,24 +59,24 @@ def get_level_indicator(level):
     return f"{'  ' * num_spaces}x"
 
 def write_message_to_csv(writer, chat, feedbackObject, level, index):
-    # message_contents = [part for part in chat['message']['content']['parts']] if len(chat['message']['content']['parts']) > 1 else chat['message']['content']['parts'][0]
+    message_contents = [part for part in chat['message']['content']['parts']] if len(chat['message']['content']['parts']) > 1 else chat['message']['content']['parts'][0]
     create_time = get_UTC_timestamp(chat['message']['create_time'])
     author = getAuthorString(chat)
     level_indicator = get_level_indicator(level)
     feedback = feedbackObject.get(chat['id'])
     rating = feedback.get('rating', "") if feedback else ""
-    contentString = feedback.get('content', "") if feedback else None
-    contentObject = json.loads(contentString) if contentString else None
-    tags = contentObject.get('tags', "") if contentObject else ""
-    text_feedback = contentObject.get('text', "") if contentObject else ""
+    fb_content_string = feedback.get('content', "") if feedback else None
+    fb_content_object = json.loads(fb_content_string) if fb_content_string else None
+    tags = fb_content_object.get('tags', "") if fb_content_object else ""
+    text_feedback = fb_content_object.get('text', "") if fb_content_object else ""
     is_original_message = False if index else True
 
-    writer.writerow([chat['id'], author, level_indicator, create_time, rating, tags, text_feedback, is_original_message])
+    writer.writerow([chat['id'], author, level_indicator, level, create_time, rating, tags, text_feedback, is_original_message, message_contents])
 
 def get_UTC_timestamp(epoch_time):
     return datetime.datetime.utcfromtimestamp(epoch_time).strftime('%Y-%m-%d %H:%M:%S')
 
-csv_header_columns = ['message_id', 'author', 'level_indicator', 'create_time', 'rating', 'tags', 'text_feedback', 'is_original_message']
+csv_header_columns = ['message_id', 'author', 'level_indicator', 'lvl', 'create_time', 'rating', 'tags', 'text_feedback', 'is_original_message', 'message_contents']
 
 # returns a dictionary containing the feedback for this conversation
 # key: a message id
