@@ -21,11 +21,11 @@ def printFormat(mapping, node_id, level):
     print(f"{' ' * num_spaces}- {authorString} {node_id}")
 
 # root_id: id field of the root node
-def depth_first(mapping, node_id, level, write, writer, feedback):
+def depth_first(mapping, node_id, index, level, write, writer, feedback):
     printFormat(mapping, node_id, level)
-    write(writer, mapping[node_id], feedback)
-    for child in mapping[node_id]['children']:
-        depth_first(mapping, child, level + 1, write, writer, feedback)
+    write(writer, mapping[node_id], feedback, index)
+    for index, child in enumerate(mapping[node_id]['children']):
+        depth_first(mapping, child, index, level + 1, write, writer, feedback)
 
 
 # the structure of the tree goes
@@ -51,23 +51,24 @@ def get_system_node_id(conversation):
     return system_node_id
     # iterCount = 0
 
-def write_to_csv(writer, chat, feedbackObject):
+def write_message_to_csv(writer, chat, feedbackObject, index):
     # message_contents = [part for part in chat['message']['content']['parts']] if len(chat['message']['content']['parts']) > 1 else chat['message']['content']['parts'][0]
     create_time = get_UTC_timestamp(chat['message']['create_time'])
     feedback = feedbackObject.get(chat['id'])
     rating = feedback.get('rating', "") if feedback else ""
-    print('CONTENT DATA')
+    # print('CONTENT DATA')
     contentString = feedback.get('content', "") if feedback else None
     contentObject = json.loads(contentString) if contentString else None
-    print(contentObject)
+    # print(contentObject)
     tags = contentObject.get('tags', "") if contentObject else ""
+    is_original_message = False if index else True
 
-    writer.writerow([chat['id'], create_time, rating, tags])
+    writer.writerow([chat['id'], create_time, rating, tags, is_original_message])
 
 def get_UTC_timestamp(epoch_time):
     return datetime.datetime.utcfromtimestamp(epoch_time).strftime('%Y-%m-%d %H:%M:%S')
 
-csv_header_columns = ['message_id', 'create_time', 'rating', 'tags']
+csv_header_columns = ['message_id', 'create_time', 'rating', 'tags', 'is_original_message']
 
 # returns a dictionary containing the feedback for this conversation
 # key: a message id
@@ -99,7 +100,7 @@ def main():
             writer.writerow(csv_header_columns)
             # write a row to the csv file
             # writer.writerow(["Hello"])
-            depth_first(conversation['mapping'], system_node_id, 0, write_to_csv, writer, feedback)
+            depth_first(conversation['mapping'], system_node_id, 0, 0, write_message_to_csv, writer, feedback)
 
 if __name__ == "__main__":
     main()
