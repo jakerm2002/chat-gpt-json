@@ -101,6 +101,36 @@ def deserialize(folder_path):
     messageFeedbackJSON = json.load(messageFeedbackFile)
     messageFeedbackJSON = sorted(messageFeedbackJSON, key=operator.itemgetter('create_time'))
 
+def create_ascii_box(word):
+    box_width = len(word) + 4  # Width of the box including padding
+    horizontal_line = '─' * box_width
+
+    box_top = f'╭{horizontal_line}╮'
+    box_middle = f'│  {word}  │'
+    box_bottom = f'╰{horizontal_line}╯'
+
+    ascii_box = '\n'.join([box_top, box_middle, box_bottom])
+    return ascii_box
+
+def create_description_box(text):
+    lines = text.split('\n')
+    max_length = max(len(line) for line in lines)
+    box_width = max_length + 4  # Width of the box including padding
+    horizontal_line = '─' * box_width
+
+    box_top = f'╭{horizontal_line}╮'
+    box_bottom = f'╰{horizontal_line}╯'
+
+    padded_lines = [f'│ {line.ljust(max_length)} │' for line in lines]
+    box_middle = '\n'.join(padded_lines)
+
+    ascii_box = '\n'.join([box_top, box_middle, box_bottom])
+    return ascii_box
+
+def prompt_user_input():
+    print(create_ascii_box('CONSOLE'))
+    print(create_description_box('Use the console to obtain\ninformation about an object via its id.'))
+    user_input = input("Enter a conversation id:")
 
 def main(folder_path):
     # Your main program logic here
@@ -131,6 +161,7 @@ def main(folder_path):
             depth_first(conversation['mapping'], system_node_id, 0, 0, write_message_to_csv, writer, feedback)
 
         print()
+        prompt_user_input()
 
 
 if __name__ == "__main__":
