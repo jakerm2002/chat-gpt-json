@@ -94,7 +94,7 @@ def main():
         system_node_id = get_system_node_id(conversation)
 
         # open the file in the write mode
-        with open(f'{conversationTitle}_{conversationID}.csv', 'w') as f:
+        with open(f'{conversationCreateTime}_{conversationID}_{conversationTitle}.csv', 'w') as f:
             # create the csv writer
             writer = csv.writer(f)
 
