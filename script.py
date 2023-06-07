@@ -94,12 +94,14 @@ def main():
 
         feedback = get_conversation_feedback(conversationID)
 
-        csvTitle = conversationCreateTime + ' ' + conversationTitle + ' ' + conversationID
-        print(csvTitle)
+        printTitle = f'CONVERSATION {conversationCreateTime} {conversationTitle} {conversationID}'
+        csvTitle = f'{conversationCreateTime}_{conversationID}_{format_output_conversation_title(conversationTitle)}.csv'
+
+        print(printTitle)
         system_node_id = get_system_node_id(conversation)
 
         # open the file in the write mode
-        with open(f'{conversationCreateTime}_{conversationID}_{format_output_conversation_title(conversationTitle)}.csv', 'w') as f:
+        with open(csvTitle, 'w') as f:
             # create the csv writer
             writer = csv.writer(f)
 
@@ -107,6 +109,8 @@ def main():
             # write a row to the csv file
             # writer.writerow(["Hello"])
             depth_first(conversation['mapping'], system_node_id, 0, 0, write_message_to_csv, writer, feedback)
+
+        print()
 
 if __name__ == "__main__":
     main()
