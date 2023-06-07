@@ -8,7 +8,8 @@ file = open('dataExport/conversations.json')
 conversationsJSON = json.load(file)
 conversationsJSON = sorted(conversationsJSON, key=operator.itemgetter('create_time'))
 
-def printFormat(mapping, node_id, num_spaces):
+def printFormat(mapping, node_id, level):
+    num_spaces = level * 2
     authorInfo = mapping[node_id]['message']['author']['role']
     authorString = "USER" if authorInfo == "user" else "GPT" if authorInfo == "assistant" else "SYSTEM_ROOT"
     # print((" " * num_spaces) + " - " + messageAuthor + node_id)
@@ -17,7 +18,7 @@ def printFormat(mapping, node_id, num_spaces):
 # root_id: id field of the root node
 def depth_first(mapping, node_id, level):
     # if mapping[node_id]['children']:
-    printFormat(mapping, node_id, level * 2)
+    printFormat(mapping, node_id, level)
     for child in mapping[node_id]['children']:
         # printFormat(mapping, child, level * 2)
         depth_first(mapping, child, level + 1)
