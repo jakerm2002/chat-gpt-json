@@ -70,13 +70,15 @@ def write_message_to_csv(writer, chat, feedbackObject, level, index):
     tags = fb_content_object.get('tags', "") if fb_content_object else ""
     text_feedback = fb_content_object.get('text', "") if fb_content_object else ""
     is_original_message = False if index else True
+    parent = chat['parent']
+    children = chat['children']
 
-    writer.writerow([chat['id'], author, level_indicator, level, create_time, rating, tags, text_feedback, is_original_message, message_contents])
+    writer.writerow([chat['id'], author, level_indicator, level, create_time, rating, tags, text_feedback, is_original_message, message_contents, parent, children])
 
 def get_UTC_timestamp(epoch_time):
     return datetime.datetime.utcfromtimestamp(epoch_time).strftime('%Y-%m-%d %H:%M:%S')
 
-csv_header_columns = ['message_id', 'author', 'level_indicator', 'lvl', 'create_time', 'rating', 'tags', 'text_feedback', 'is_original_message', 'message_contents']
+csv_header_columns = ['message_id', 'author', 'level_indicator', 'lvl', 'create_time', 'rating', 'tags', 'text_feedback', 'is_original_message', 'message_contents', 'parent', 'children']
 
 # returns a dictionary containing the feedback for this conversation
 # key: a message id
