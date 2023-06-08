@@ -93,6 +93,29 @@ def get_UTC_timestamp(epoch_time):
     return datetime.datetime.utcfromtimestamp(epoch_time).strftime('%Y-%m-%d %H:%M:%S')
 
 
+def get_comparison_feedback(conversation_id):
+    comparisonDict = {}
+    for comparison in comparisonFeedbackJSON:
+        if comparison['input']['conversation_id'] == conversation_id:
+            relevant_message_id = comparison['output']['feedback_step_2']['new_turn']['id']
+
+            if comparison['output']['feedback_step_2']['new_completion_placement'] == "not-applicable":
+                # this means a response was regenerated using the "Regenerate response" button
+                # This feedback is the dialogue box on ChatGPT after pressing regenerate
+                # Where it asks Was this response better or worse? (or same)
+                comparison_type = 'regen'
+
+            else:
+                # this means that the user has the pairwise comparison interface in front of them
+                # where they can see both responses and choose which one they prefer (or if they prefer neither)
+                comparison_type = 'pairwise'
+
+            comparisonDict[relevant_message_id]= {
+                'comparison_type': comparison_type,
+                'choice': comparison['output']['feedback_step_2']['completion_comparison_rating']
+            }
+
+
 # returns a dictionary containing the feedback for this conversation
 # key: a message id
 # value: feedback for the corresponding message
@@ -118,6 +141,7 @@ def format_output_conversation_title(conversation_title):
 def deserialize(folder_path):
     global conversationsJSON
     global messageFeedbackJSON
+    global comparisonFeedbackJSON
 
     conversationsFile = open(f'{folder_path}/conversations.json')
     conversationsJSON = json.load(conversationsFile)
@@ -126,6 +150,10 @@ def deserialize(folder_path):
     messageFeedbackFile = open(f'{folder_path}/message_feedback.json')
     messageFeedbackJSON = json.load(messageFeedbackFile)
     messageFeedbackJSON = sorted(messageFeedbackJSON, key=operator.itemgetter('create_time'))
+
+    comparisonFeedbackFile = open(f'{folder_path}/model_comparisons.json')
+    comparisonFeedbackJSON = json.load(comparisonFeedbackFile)
+    comparisonFeedbackJSON = sorted(comparisonFeedbackJSON, key=operator.itemgetter('create_time'))
 
 def create_ascii_box(word):
     box_width = len(word) + 4  # Width of the box including padding
