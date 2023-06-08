@@ -150,7 +150,6 @@ def prompt_user_input():
 
     while True:
         user_input = input("Enter a (conversation/message) id: ")
-        print()
         if user_input.lower() == 'exit' or user_input.lower() == 'quit':
             break
         print_reference(user_input)
@@ -163,26 +162,27 @@ def print_reference(reference_id):
     ref = get_reference(reference_id)
     if not ref:
         print('id is not valid!')
-    conv = get_conversation(ref[0])
-    if ref[1] == 'conversation':
-        print(create_ascii_box(f'Conversation - {conv["title"]}'))
-    print(create_ascii_box(reference_id))
-    print(create_ascii_box(f'type: {ref[1]}'))
-    system_node_id = get_system_node_id(conv)
-    if ref[1] != 'conversation':
-        print(create_ascii_box(f'author: {getAuthorString(conv["mapping"][reference_id])}'))
-        print(create_ascii_box(f'In conversation: {conv["title"]} {ref[0]}'))
-        parent = conv["mapping"][reference_id]["parent"]
-        print(create_ascii_box(f'Parent: {parent}'))
-        children = conv["mapping"][reference_id]["children"] if conv["mapping"][reference_id]["children"] else "None"
-        print(create_ascii_box(f'Children:'))
-        if type(children) == list:
-            for child in children:
-                print(f'    {child}')
-        else:
-            print('    None')
-    print(create_ascii_box('Tree: '))
-    depth_first_print_only(conv["mapping"], system_node_id, 0, 0, target=reference_id)
+    else:
+        conv = get_conversation(ref[0])
+        if ref[1] == 'conversation':
+            print(create_ascii_box(f'Conversation - {conv["title"]}'))
+        print(create_ascii_box(reference_id))
+        print(create_ascii_box(f'type: {ref[1]}'))
+        system_node_id = get_system_node_id(conv)
+        if ref[1] != 'conversation':
+            print(create_ascii_box(f'author: {getAuthorString(conv["mapping"][reference_id])}'))
+            print(create_ascii_box(f'In conversation: {conv["title"]} {ref[0]}'))
+            parent = conv["mapping"][reference_id]["parent"]
+            print(create_ascii_box(f'Parent: {parent}'))
+            children = conv["mapping"][reference_id]["children"] if conv["mapping"][reference_id]["children"] else "None"
+            print(create_ascii_box(f'Children:'))
+            if type(children) == list:
+                for child in children:
+                    print(f'    {child}')
+            else:
+                print('    None')
+        print(create_ascii_box('Tree: '))
+        depth_first_print_only(conv["mapping"], system_node_id, 0, 0, target=reference_id)
     print()
     print("––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––")
 
