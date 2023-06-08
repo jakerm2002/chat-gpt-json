@@ -19,13 +19,16 @@ def getAuthorString(chat):
     return "user" if authorInfo == "user" else "GPT" if authorInfo == "assistant" else "SYSTEM"
 
 
-def printFormat(mapping, node_id, level, target=None):
+def printFormat(mapping, node_id, level, target=None, toConsole=False):
     num_spaces = level * 2
     authorString = getAuthorString(mapping[node_id])
     endChar = ""
     if target and node_id == target:
         endChar = "     *"
-    printE(f"{' ' * num_spaces}- {authorString} {node_id}{endChar}")
+    if toConsole:
+        print(f"{' ' * num_spaces}- {authorString} {node_id}{endChar}")
+    else:
+        printE(f"{' ' * num_spaces}- {authorString} {node_id}{endChar}")
 
 
 # root_id: id field of the root node
@@ -37,7 +40,7 @@ def depth_first(mapping, node_id, index, level, write, writer, feedback):
 
 
 def depth_first_print_only(mapping, node_id, index, level, target=None):
-    printFormat(mapping, node_id, level, target=target)
+    printFormat(mapping, node_id, level, target=target, toConsole=True)
     for index, child in enumerate(mapping[node_id]['children']):
         depth_first_print_only(mapping, child, index, level + 1, target=target)
 
