@@ -220,8 +220,7 @@ def main(folder_path):
         system_node_id = get_system_node_id(conversation)
 
         OUTPUT_DIR = "output"
-        if not os.path.exists(OUTPUT_DIR):
-            os.makedirs(OUTPUT_DIR)
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
         with open(f'{OUTPUT_DIR}/{csvTitle}', 'w') as f:
             writer = csv.writer(f)
             writer.writerow(csv_header_columns)
