@@ -32,11 +32,11 @@ def printFormat(mapping, node_id, level, target=None, toConsole=False):
 
 
 # root_id: id field of the root node
-def depth_first(mapping, node_id, index, level, write, writer, feedback):
+def depth_first(mapping, node_id, index, level, write, writer, feedback, comparison_feedback):
     printFormat(mapping, node_id, level)
-    write(writer, mapping[node_id], feedback, level, index)
+    write(writer, mapping[node_id], feedback, comparison_feedback, level, index)
     for index, child in enumerate(mapping[node_id]['children']):
-        depth_first(mapping, child, index, level + 1, write, writer, feedback)
+        depth_first(mapping, child, index, level + 1, write, writer, feedback, comparison_feedback)
 
 
 def depth_first_print_only(mapping, node_id, index, level, target=None):
@@ -70,8 +70,8 @@ def get_level_indicator(level):
     return f"{'  ' * num_spaces}x"
 
 
-csv_header_columns = ['message_id', 'author', 'level_indicator', 'lvl', 'create_time', 'rating', 'tags', 'text_feedback', 'is_original_message', 'message_contents', 'parent', 'children']
-def write_message_to_csv(writer, chat, feedbackObject, level, index):
+csv_header_columns = ['message_id', 'author', 'level_indicator', 'lvl', 'create_time', 'rating', 'tags', 'text_feedback', 'is_original_message', 'comparison_type', 'comparison_choice', 'message_contents', 'parent', 'children']
+def write_message_to_csv(writer, chat, feedbackObject, comparisonFeedbackObject, level, index):
     message_contents = [part for part in chat['message']['content']['parts']] if len(chat['message']['content']['parts']) > 1 else chat['message']['content']['parts'][0]
     create_time = get_UTC_timestamp(chat['message']['create_time'])
     author = getAuthorString(chat)
@@ -83,10 +83,14 @@ def write_message_to_csv(writer, chat, feedbackObject, level, index):
     tags = fb_content_object.get('tags', "") if fb_content_object else ""
     text_feedback = fb_content_object.get('text', "") if fb_content_object else ""
     is_original_message = False if index else True
+    comparisonFeedback = comparisonFeedbackObject.get(chat['id'])
+    comparisonType = comparisonFeedback['comparison_type'] if comparisonFeedback else ""
+    comparisonChoice = comparisonFeedback['choice'] if comparisonFeedback else ""
+
     parent = chat['parent']
     children = chat['children']
 
-    writer.writerow([chat['id'], author, level_indicator, level, create_time, rating, tags, text_feedback, is_original_message, message_contents, parent, children])
+    writer.writerow([chat['id'], author, level_indicator, level, create_time, rating, tags, text_feedback, is_original_message, comparisonType, comparisonChoice, message_contents, parent, children])
 
 
 def get_UTC_timestamp(epoch_time):
@@ -97,23 +101,34 @@ def get_comparison_feedback(conversation_id):
     comparisonDict = {}
     for comparison in comparisonFeedbackJSON:
         if comparison['input']['conversation_id'] == conversation_id:
-            relevant_message_id = comparison['output']['feedback_step_2']['new_turn']['id']
+            relevant_message_id = comparison['output']['feedback_step_2']['new_turn'][0]['id']
 
             if comparison['output']['feedback_step_2']['new_completion_placement'] == "not-applicable":
                 # this means a response was regenerated using the "Regenerate response" button
                 # This feedback is the dialogue box on ChatGPT after pressing regenerate
                 # Where it asks Was this response better or worse? (or same)
                 comparison_type = 'regen'
+                feedback_translation = {
+                    "new": "better",
+                    "original": "worse",
+                    "same": "same"
+                }
 
             else:
                 # this means that the user has the pairwise comparison interface in front of them
                 # where they can see both responses and choose which one they prefer (or if they prefer neither)
                 comparison_type = 'pairwise'
+                feedback_translation = {
+                    "new": "preferred this",
+                    "original": "preferred original",
+                    "same": "preferred neither"
+                }
 
             comparisonDict[relevant_message_id]= {
                 'comparison_type': comparison_type,
-                'choice': comparison['output']['feedback_step_2']['completion_comparison_rating']
+                'choice': feedback_translation[comparison['output']['feedback_step_2']['completion_comparison_rating']]
             }
+    return comparisonDict
 
 
 # returns a dictionary containing the feedback for this conversation
@@ -257,6 +272,7 @@ def main(folder_path):
         references.update({chat_id: (conversation['id'], 'chat') for chat_id in conversation['mapping']})
 
         feedback = get_conversation_feedback(conversationID)
+        comparison_feedback = get_comparison_feedback(conversationID)
 
         printTitle = f'CONVERSATION {conversationCreateTime} {conversationTitle} {conversationID}'
         csvTitle = f'{conversationCreateTime}_{conversationID}_{format_output_conversation_title(conversationTitle)}.csv'
@@ -269,7 +285,7 @@ def main(folder_path):
         with open(f'{OUTPUT_DIR}/{csvTitle}', 'w') as f:
             writer = csv.writer(f)
             writer.writerow(csv_header_columns)
-            depth_first(conversation['mapping'], system_node_id, 0, 0, write_message_to_csv, writer, feedback)
+            depth_first(conversation['mapping'], system_node_id, 0, 0, write_message_to_csv, writer, feedback, comparison_feedback)
 
         printE()
 
