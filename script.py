@@ -5,16 +5,27 @@ import operator
 import sys
 import os
 
+def printE(string=""):
+    # printE outputs to a README file,
+    # and so this function cannot be used until we know what the
+    # data folder is called so we can name this README file properly
+    assert(folder_name is not None)
+    with open(README_NAME, 'a') as f:
+        print(string, file=f)
+    # print(string)
 
 def getAuthorString(chat):
     authorInfo = chat['message']['author']['role']
     return "user" if authorInfo == "user" else "GPT" if authorInfo == "assistant" else "SYSTEM"
 
 
-def printFormat(mapping, node_id, level):
+def printFormat(mapping, node_id, level, target=None):
     num_spaces = level * 2
     authorString = getAuthorString(mapping[node_id])
-    print(f"{' ' * num_spaces}- {authorString} {node_id}")
+    endChar = ""
+    if target and node_id == target:
+        endChar = "     *"
+    printE(f"{' ' * num_spaces}- {authorString} {node_id}{endChar}")
 
 
 # root_id: id field of the root node
@@ -23,6 +34,12 @@ def depth_first(mapping, node_id, index, level, write, writer, feedback):
     write(writer, mapping[node_id], feedback, level, index)
     for index, child in enumerate(mapping[node_id]['children']):
         depth_first(mapping, child, index, level + 1, write, writer, feedback)
+
+
+def depth_first_print_only(mapping, node_id, index, level, target=None):
+    printFormat(mapping, node_id, level, target=target)
+    for index, child in enumerate(mapping[node_id]['children']):
+        depth_first_print_only(mapping, child, index, level + 1, target=target)
 
 
 # the structure of the tree goes
@@ -83,6 +100,12 @@ def get_conversation_feedback(conversation_id):
             feedbackDict[feedback['id']] = feedback
     return feedbackDict
 
+def get_conversation(conversation_id):
+    for conversation in conversationsJSON:
+        if conversation['id'] == conversation_id:
+            return conversation
+    return None
+
 
 # removes backslashes and dots to avoid python open() command when writing
 def format_output_conversation_title(conversation_title):
@@ -101,6 +124,76 @@ def deserialize(folder_path):
     messageFeedbackJSON = json.load(messageFeedbackFile)
     messageFeedbackJSON = sorted(messageFeedbackJSON, key=operator.itemgetter('create_time'))
 
+def create_ascii_box(word):
+    box_width = len(word) + 4  # Width of the box including padding
+    horizontal_line = '─' * box_width
+
+    box_top = f'╭{horizontal_line}╮'
+    box_middle = f'│  {word}  │'
+    box_bottom = f'╰{horizontal_line}╯'
+
+    ascii_box = '\n'.join([box_top, box_middle, box_bottom])
+    return ascii_box
+
+def create_description_box(text):
+    lines = text.split('\n')
+    max_length = max(len(line) for line in lines)
+    box_width = max_length + 4  # Width of the box including padding
+    horizontal_line = '─' * box_width
+
+    box_top = f'╭{horizontal_line}╮'
+    box_bottom = f'╰{horizontal_line}╯'
+
+    padded_lines = [f'│ {line.ljust(max_length).rjust(box_width - 2)} │' for line in lines]
+    box_middle = '\n'.join(padded_lines)
+
+    ascii_box = '\n'.join([box_top, box_middle, box_bottom])
+    return ascii_box
+
+def prompt_user_input():
+    print(create_ascii_box('CONSOLE'))
+    print(create_description_box('Use the console to obtain\ninformation about an object via its id.'))
+    print("––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––")
+    print()
+
+    while True:
+        user_input = input("Enter a (conversation/message) id: ")
+        if user_input.lower() == 'exit' or user_input.lower() == 'quit':
+            break
+        print_reference(user_input)
+
+def get_reference(reference_id):
+    return references.get(reference_id, None)
+
+
+def print_reference(reference_id):
+    ref = get_reference(reference_id)
+    if not ref:
+        print('id is not valid!')
+    else:
+        conv = get_conversation(ref[0])
+        if ref[1] == 'conversation':
+            print(create_ascii_box(f'Conversation - {conv["title"]}'))
+        print(create_ascii_box(reference_id))
+        print(create_ascii_box(f'type: {ref[1]}'))
+        system_node_id = get_system_node_id(conv)
+        if ref[1] != 'conversation':
+            print(create_ascii_box(f'author: {getAuthorString(conv["mapping"][reference_id])}'))
+            print(create_ascii_box(f'In conversation: {conv["title"]} {ref[0]}'))
+            parent = conv["mapping"][reference_id]["parent"]
+            print(create_ascii_box(f'Parent: {parent}'))
+            children = conv["mapping"][reference_id]["children"] if conv["mapping"][reference_id]["children"] else "None"
+            print(create_ascii_box(f'Children:'))
+            if type(children) == list:
+                for child in children:
+                    print(f'    {child}')
+            else:
+                print('    None')
+        print(create_ascii_box('Tree: '))
+        depth_first_print_only(conv["mapping"], system_node_id, 0, 0, target=reference_id)
+    print()
+    print("––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––")
+
 
 def main(folder_path):
     # Your main program logic here
@@ -108,29 +201,52 @@ def main(folder_path):
         print("Invalid folder path!")
         sys.exit(1)
 
+    print()
+    print("Working...")
+
+    global folder_name
     folder_name = os.path.basename(folder_path)
+    global README_NAME
+    README_NAME = f'README_{folder_name}.txt'
 
     deserialize(folder_path)
+    
+    # global dictionary
+    # key: a conversation/message/feedback id
+    # value: the conversation where the id is contained
+    global references
+    references = {}
 
     for conversation in conversationsJSON:
         conversationTitle = conversation['title']
         conversationCreateTime = get_UTC_timestamp(conversation['create_time'])
         conversationID = conversation['id']
 
+        references[conversation['id']] = (conversation['id'], 'conversation')
+        references.update({chat_id: (conversation['id'], 'chat') for chat_id in conversation['mapping']})
+
         feedback = get_conversation_feedback(conversationID)
 
         printTitle = f'CONVERSATION {conversationCreateTime} {conversationTitle} {conversationID}'
         csvTitle = f'{conversationCreateTime}_{conversationID}_{format_output_conversation_title(conversationTitle)}.csv'
 
-        print(printTitle)
+        printE(printTitle)
         system_node_id = get_system_node_id(conversation)
 
-        with open(csvTitle, 'w') as f:
+        OUTPUT_DIR = f"output_{folder_name}"
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        with open(f'{OUTPUT_DIR}/{csvTitle}', 'w') as f:
             writer = csv.writer(f)
             writer.writerow(csv_header_columns)
             depth_first(conversation['mapping'], system_node_id, 0, 0, write_message_to_csv, writer, feedback)
 
-        print()
+        printE()
+
+    print("CSV creation finished.")
+    print()
+    print(f"An overview of the data has been output to a file: '{README_NAME}'")
+    print()
+    prompt_user_input()
 
 
 if __name__ == "__main__":
