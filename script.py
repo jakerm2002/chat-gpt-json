@@ -163,13 +163,15 @@ def print_reference(reference_id):
     ref = get_reference(reference_id)
     if not ref:
         print('id is not valid!')
-    print(create_ascii_box(reference_id))
-    print(create_ascii_box(ref[1]))
     conv = get_conversation(ref[0])
+    if ref[1] == 'conversation':
+        print(create_ascii_box(f'Conversation - {conv["title"]}'))
+    print(create_ascii_box(reference_id))
+    print(create_ascii_box(f'type: {ref[1]}'))
     system_node_id = get_system_node_id(conv)
     if ref[1] != 'conversation':
         print(create_ascii_box(f'author: {getAuthorString(conv["mapping"][reference_id])}'))
-        print(create_ascii_box(f'In conversation: {ref[0]}'))
+        print(create_ascii_box(f'In conversation: {conv["title"]} {ref[0]}'))
         parent = conv["mapping"][reference_id]["parent"]
         print(create_ascii_box(f'Parent: {parent}'))
         children = conv["mapping"][reference_id]["children"] if conv["mapping"][reference_id]["children"] else "None"
@@ -180,7 +182,9 @@ def print_reference(reference_id):
         else:
             print('    None')
     print(create_ascii_box('Tree: '))
-    print(depth_first_print_only(conv["mapping"], system_node_id, 0, 0, target=reference_id))
+    depth_first_print_only(conv["mapping"], system_node_id, 0, 0, target=reference_id)
+    print()
+    print("––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––")
 
 
 def main(folder_path):
@@ -222,7 +226,7 @@ def main(folder_path):
 
         print()
 
-    print(json.dumps(references, indent=4))
+    # print(json.dumps(references, indent=4))
     prompt_user_input()
 
 
