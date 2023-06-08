@@ -5,6 +5,14 @@ import operator
 import sys
 import os
 
+def printE(string=""):
+    # printE outputs to a README file,
+    # and so this function cannot be used until we know what the
+    # data folder is called so we can name this README file properly
+    assert(folder_name is not None)
+    with open(README_NAME, 'a') as f:
+        print(string, file=f)
+    # print(string)
 
 def getAuthorString(chat):
     authorInfo = chat['message']['author']['role']
@@ -17,7 +25,7 @@ def printFormat(mapping, node_id, level, target=None):
     endChar = ""
     if target and node_id == target:
         endChar = "     *"
-    print(f"{' ' * num_spaces}- {authorString} {node_id}{endChar}")
+    printE(f"{' ' * num_spaces}- {authorString} {node_id}{endChar}")
 
 
 # root_id: id field of the root node
@@ -193,7 +201,13 @@ def main(folder_path):
         print("Invalid folder path!")
         sys.exit(1)
 
+    print()
+    print("Working...")
+
+    global folder_name
     folder_name = os.path.basename(folder_path)
+    global README_NAME
+    README_NAME = f'README_{folder_name}.txt'
 
     deserialize(folder_path)
     
@@ -216,7 +230,7 @@ def main(folder_path):
         printTitle = f'CONVERSATION {conversationCreateTime} {conversationTitle} {conversationID}'
         csvTitle = f'{conversationCreateTime}_{conversationID}_{format_output_conversation_title(conversationTitle)}.csv'
 
-        print(printTitle)
+        printE(printTitle)
         system_node_id = get_system_node_id(conversation)
 
         OUTPUT_DIR = f"output_{folder_name}"
@@ -226,9 +240,12 @@ def main(folder_path):
             writer.writerow(csv_header_columns)
             depth_first(conversation['mapping'], system_node_id, 0, 0, write_message_to_csv, writer, feedback)
 
-        print()
+        printE()
 
-    # print(json.dumps(references, indent=4))
+    print("CSV creation finished.")
+    print()
+    print(f"An overview of the data has been output to a file: {README_NAME}")
+    print()
     prompt_user_input()
 
 
