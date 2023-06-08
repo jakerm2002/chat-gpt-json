@@ -219,7 +219,10 @@ def main(folder_path):
         print(printTitle)
         system_node_id = get_system_node_id(conversation)
 
-        with open(csvTitle, 'w') as f:
+        OUTPUT_DIR = "output"
+        if not os.path.exists(OUTPUT_DIR):
+            os.makedirs(OUTPUT_DIR)
+        with open(f'{OUTPUT_DIR}/{csvTitle}', 'w') as f:
             writer = csv.writer(f)
             writer.writerow(csv_header_columns)
             depth_first(conversation['mapping'], system_node_id, 0, 0, write_message_to_csv, writer, feedback)
