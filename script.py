@@ -219,7 +219,7 @@ def main(folder_path):
         print(printTitle)
         system_node_id = get_system_node_id(conversation)
 
-        OUTPUT_DIR = "output"
+        OUTPUT_DIR = f"output_{folder_name}"
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         with open(f'{OUTPUT_DIR}/{csvTitle}', 'w') as f:
             writer = csv.writer(f)
