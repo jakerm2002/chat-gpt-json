@@ -244,7 +244,7 @@ def main(folder_path):
 
     print("CSV creation finished.")
     print()
-    print(f"An overview of the data has been output to a file: {README_NAME}")
+    print(f"An overview of the data has been output to a file: '{README_NAME}'")
     print()
     prompt_user_input()
 
