@@ -255,6 +255,9 @@ def main(folder_path):
     global README_NAME
     README_NAME = f'README_{folder_name}.txt'
 
+    printE("This file contains an overview of all conversations in the target directory.")
+    printE()
+
     deserialize(folder_path)
     
     # global dictionary
